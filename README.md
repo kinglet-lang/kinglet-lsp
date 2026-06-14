@@ -10,10 +10,11 @@ The server reuses the [bootstrap](https://github.com/kinglet-lang/bootstrap) com
 kinglet-lsp/
 ├── server/src/lsp/     # LSP protocol + analysis + completion
 ├── server/main.cc      # stdio entry point
-├── src/                # → bootstrap/src (symlink; GN deps //src/*)
+├── client/             # VS Code extension (TypeScript)
+├── src/                # → bootstrap/src (junction; GN deps //src/*)
 ├── build/              # GN config + bootstrap toolchain/config links
 ├── kinglet-lsp         # wrapper script → out/Default/kinglet-lsp
-└── package.json        # VS Code extension (spawns kinglet-lsp)
+└── package.json        # VS Code extension manifest
 ```
 
 ## Build (server)
@@ -22,7 +23,9 @@ Requires [GN](https://gn.googlesource.com/gn/), ninja, and a C++20 toolchain (cl
 
 ```bash
 # One-time: link bootstrap sources (or git submodule update --init third_party/bootstrap)
-bash scripts/setup-deps.sh
+bash scripts/setup-deps.sh   # macOS/Linux
+# Windows PowerShell:
+#   .\scripts\setup-deps.ps1
 
 gn gen out/Default --args='is_debug=false'
 ninja -C out/Default kinglet-lsp
@@ -44,6 +47,34 @@ ninja -C out/Default kinglet-lsp
 npm install
 npm run compile
 ```
+
+### Option A — install from VSIX (recommended for daily use)
+
+Build the LSP server, then package the extension. On Windows the VSIX bundles
+`kinglet-lsp.exe` plus MinGW runtime DLLs (`libstdc++-6.dll`, `libgcc_s_seh-1.dll`)
+so VS Code does not need MSYS2 on `PATH`.
+
+```bash
+ninja -C out/Default kinglet-lsp
+npm run package
+```
+
+In VS Code: **Extensions** → `...` → **Install from VSIX…** → pick `kinglet-lsp-vscode-0.1.3.vsix`.
+
+The client is **esbuild-bundled** into `out/extension.js` (includes `vscode-languageclient`).
+Do not exclude `node_modules` from the VSIX without bundling — that leaves the extension stuck on **activating**.
+
+No `kinglet.lspPath` setting is required when the VSIX includes the matching binary under `bin/`.
+
+**Verify LSP is running**
+
+1. Open a `.kl` file — bottom-right language mode should be **Kinglet** (not Plain Text).
+2. Status bar (bottom-right) should show **Kinglet** with a checkmark when the server is up.
+3. **Ctrl+Shift+P** → **Kinglet: Show Language Server Log** — opens the **Kinglet** output channel.
+4. In **View → Output**, pick **Kinglet** from the dropdown (not “Perch”).
+5. For RPC traces: `"kinglet.trace.server": "verbose"`.
+
+### Option B — Extension Development Host (F5)
 
 Press **F5** to launch the Extension Development Host. Set `kinglet.lspPath` to your built binary if it is not on `PATH`.
 
