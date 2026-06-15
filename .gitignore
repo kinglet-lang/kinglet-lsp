@@ -1,7 +1,6 @@
 # Kinglet language server + VS Code extension (Perch).
 
-# Bootstrap compiler frontend (symlink/junction via scripts/setup-deps)
-/third_party/bootstrap
+# Bootstrap GN links (symlink/junction via scripts/setup-deps)
 /build/config
 /build/toolchain
 /src

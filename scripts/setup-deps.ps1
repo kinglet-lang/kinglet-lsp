@@ -1,10 +1,16 @@
-# Link bootstrap compiler tree for GN (Windows).
+# Initialize bootstrap compiler tree for GN (git submodule + junctions).
 # Usage: .\scripts\setup-deps.ps1
 #        $env:BOOTSTRAP_ROOT = 'F:\code\KPL\bootstrap'; .\scripts\setup-deps.ps1
 
 $ErrorActionPreference = 'Stop'
 $Root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$Bootstrap = if ($env:BOOTSTRAP_ROOT) { $env:BOOTSTRAP_ROOT } else { Join-Path $Root '..\bootstrap' }
+
+if (-not $env:BOOTSTRAP_ROOT) {
+  git -C $Root submodule update --init third_party/bootstrap
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
+$Bootstrap = if ($env:BOOTSTRAP_ROOT) { $env:BOOTSTRAP_ROOT } else { Join-Path $Root 'third_party\bootstrap' }
 $Bootstrap = (Resolve-Path $Bootstrap).Path
 
 if (-not (Test-Path (Join-Path $Bootstrap 'BUILD.gn'))) {
@@ -21,11 +27,9 @@ function Set-Junction([string]$Name, [string]$Target) {
 }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'build') | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $Root 'third_party') | Out-Null
 
-Set-Junction 'third_party\bootstrap' $Bootstrap
 Set-Junction 'build\config' (Join-Path $Bootstrap 'build\config')
 Set-Junction 'build\toolchain' (Join-Path $Bootstrap 'build\toolchain')
 Set-Junction 'src' (Join-Path $Bootstrap 'src')
 
-Write-Host "bootstrap linked from $Bootstrap"
+Write-Host "bootstrap ready at $Bootstrap"

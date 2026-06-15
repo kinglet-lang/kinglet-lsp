@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Link bootstrap compiler sources for GN (local dev).
-# In CI, use: git submodule update --init third_party/bootstrap
+# Initialize bootstrap compiler sources for GN (git submodule + symlinks).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BOOTSTRAP="${BOOTSTRAP_ROOT:-$ROOT/../bootstrap}"
+BOOTSTRAP="${BOOTSTRAP_ROOT:-$ROOT/third_party/bootstrap}"
+
+if [[ -z "${BOOTSTRAP_ROOT:-}" ]]; then
+  git -C "$ROOT" submodule update --init third_party/bootstrap
+fi
 
 if [[ ! -f "$BOOTSTRAP/BUILD.gn" ]]; then
   echo "bootstrap not found at $BOOTSTRAP" >&2
@@ -23,10 +26,9 @@ link_dir() {
   ln -s "$target" "$path"
 }
 
-mkdir -p "$ROOT/build" "$ROOT/third_party"
-link_dir third_party/bootstrap "$BOOTSTRAP"
+mkdir -p "$ROOT/build"
 link_dir build/config "$BOOTSTRAP/build/config"
 link_dir build/toolchain "$BOOTSTRAP/build/toolchain"
 link_dir src "$BOOTSTRAP/src"
 
-echo "linked bootstrap from $BOOTSTRAP"
+echo "bootstrap ready at $BOOTSTRAP"

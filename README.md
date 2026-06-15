@@ -11,7 +11,8 @@ kinglet-lsp/
 ├── server/src/lsp/     # LSP protocol + analysis + completion
 ├── server/main.cc      # stdio entry point
 ├── client/             # VS Code extension (TypeScript)
-├── src/                # → bootstrap/src (junction; GN deps //src/*)
+├── third_party/bootstrap/  # git submodule (compiler frontend)
+├── src/                # → third_party/bootstrap/src (symlink; GN deps //src/*)
 ├── build/              # GN config + bootstrap toolchain/config links
 ├── kinglet-lsp         # wrapper script → out/Default/kinglet-lsp
 └── package.json        # VS Code extension manifest
@@ -22,7 +23,7 @@ kinglet-lsp/
 Requires [GN](https://gn.googlesource.com/gn/), ninja, and a C++20 toolchain (clang++).
 
 ```bash
-# One-time: link bootstrap sources (or git submodule update --init third_party/bootstrap)
+# One-time: init bootstrap submodule + GN symlinks
 bash scripts/setup-deps.sh   # macOS/Linux
 # Windows PowerShell:
 #   .\scripts\setup-deps.ps1
