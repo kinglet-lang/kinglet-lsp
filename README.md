@@ -1,98 +1,65 @@
-# kinglet-lsp
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kinglet-lang/kinglet-lsp/main/image/icons/icon.png" width="128" alt="Kinglet">
+</p>
 
-C++ [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation for [Kinglet](https://github.com/kinglet-lang/kinglet), plus the **Perch** VS Code extension (client only).
+<h1 align="center">Kinglet for VS Code</h1>
 
-The server reuses the [bootstrap](https://github.com/kinglet-lang/bootstrap) compiler frontend (lexer, parser, checker, module loader). It does **not** live in the compiler repo.
+<p align="center">Language support for <a href="https://github.com/kinglet-lang/kinglet">Kinglet</a> (<code>.kl</code>) — syntax highlighting and a fast, native language server.</p>
 
-## Layout
+---
 
-```
-kinglet-lsp/
-├── server/src/lsp/     # LSP protocol + analysis + completion
-├── server/main.cc      # stdio entry point
-├── client/             # VS Code extension (TypeScript)
-├── third_party/bootstrap/  # git submodule (compiler frontend)
-├── src/                # → third_party/bootstrap/src (symlink; GN deps //src/*)
-├── build/              # GN config + bootstrap toolchain/config links
-├── kinglet-lsp         # wrapper script → out/Default/kinglet-lsp
-└── package.json        # VS Code extension manifest
-```
+## Features
 
-## Build (server)
+- **Diagnostics** — real-time parser and type-checker errors as you type
+- **Completion** — context-aware, parser-driven suggestions
+- **Go to Definition** — jump to where a symbol is declared
+- **Hover** — types and documentation on hover
+- **Document Symbols** — outline view and breadcrumbs
+- **Signature Help** — parameter hints while you call functions
+- **Semantic Tokens** — precise, type-aware highlighting
+- **Syntax Highlighting** — TextMate grammar for `.kl` files
 
-Requires [GN](https://gn.googlesource.com/gn/), ninja, and a C++20 toolchain (clang++).
+The language server is written in C++ and reuses the official Kinglet compiler
+frontend, so diagnostics match the compiler exactly.
 
-```bash
-# One-time: init bootstrap submodule + GN symlinks
-bash scripts/setup-deps.sh   # macOS/Linux
-# Windows PowerShell:
-#   .\scripts\setup-deps.ps1
+## Getting Started
 
-gn gen out/Default --args='is_debug=false'
-ninja -C out/Default kinglet-lsp
+1. Install the extension.
+2. Open any `.kl` file — the language mode (bottom-right) switches to **Kinglet**.
+3. The language server starts automatically; a **Kinglet** indicator appears in
+   the status bar once it is up.
 
-./kinglet-lsp   # stdio LSP; VS Code / Perch spawn this
-```
-
-Windows (MSYS2 clang on PATH):
-
-```powershell
-gn gen out/Default --args='is_debug=false'
-ninja -C out/Default kinglet-lsp
-.\out\Default\kinglet-lsp.exe
-```
-
-## VS Code extension
-
-```bash
-npm install
-npm run compile
-```
-
-### Option A — install from VSIX (recommended for daily use)
-
-Build the LSP server, then package the extension. On Windows the VSIX bundles
-`kinglet-lsp.exe` plus MinGW runtime DLLs (`libstdc++-6.dll`, `libgcc_s_seh-1.dll`)
-so VS Code does not need MSYS2 on `PATH`.
-
-```bash
-ninja -C out/Default kinglet-lsp
-npm run package
-```
-
-In VS Code: **Extensions** → `...` → **Install from VSIX…** → pick `kinglet-lsp-vscode-0.1.3.vsix`.
-
-The client is **esbuild-bundled** into `out/extension.js` (includes `vscode-languageclient`).
-Do not exclude `node_modules` from the VSIX without bundling — that leaves the extension stuck on **activating**.
-
-No `kinglet.lspPath` setting is required when the VSIX includes the matching binary under `bin/`.
-
-**Verify LSP is running**
-
-1. Open a `.kl` file — bottom-right language mode should be **Kinglet** (not Plain Text).
-2. Status bar (bottom-right) should show **Kinglet** with a checkmark when the server is up.
-3. **Ctrl+Shift+P** → **Kinglet: Show Language Server Log** — opens the **Kinglet** output channel.
-4. In **View → Output**, pick **Kinglet** from the dropdown (not “Perch”).
-5. For RPC traces: `"kinglet.trace.server": "verbose"`.
-
-### Option B — Extension Development Host (F5)
-
-Press **F5** to launch the Extension Development Host. Set `kinglet.lspPath` to your built binary if it is not on `PATH`.
-
-## LSP features
-
-- Diagnostics (parser + type checker)
-- Completion (parser-driven)
-- Go to definition, hover, document symbols
-- Signature help, semantic tokens
+> The extension ships with a matching `kinglet-lsp` binary, so no extra setup is
+> required on supported platforms. To use your own build, set `kinglet.lspPath`.
 
 ## Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `kinglet.lspPath` | `kinglet-lsp` | Language server binary |
-| `kinglet.trace.server` | `off` | LSP trace level |
+| `kinglet.lspPath` | `kinglet-lsp` | Path to the language server binary. |
+| `kinglet.trace.server` | `off` | LSP trace verbosity (`off`, `messages`, `verbose`). |
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| **Kinglet: Show Language Server Log** | Open the Kinglet output channel. |
+| **Kinglet: Restart Language Server** | Restart the language server. |
+
+## Troubleshooting
+
+- **File opens as Plain Text** — set the language mode (bottom-right) to **Kinglet**,
+  or ensure the file ends in `.kl`.
+- **No diagnostics / completion** — run **Kinglet: Show Language Server Log** to
+  check the server started. For detailed RPC traces, set
+  `"kinglet.trace.server": "verbose"`.
+- **Custom server** — point `kinglet.lspPath` at your own `kinglet-lsp` binary.
+
+## Contributing
+
+Building the language server from source, packaging the VSIX, and the repo
+layout are documented in [CONTRIBUTING.md](https://github.com/kinglet-lang/kinglet-lsp/blob/main/CONTRIBUTING.md).
 
 ## License
 
-MIT
+[MIT](https://github.com/kinglet-lang/kinglet-lsp/blob/main/LICENSE)

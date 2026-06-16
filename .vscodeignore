@@ -10,9 +10,11 @@ tmp-err.txt
 tmp-*.txt
 .git/**
 .gitignore
+.gitmodules
 tsconfig.json
 .github/**
 node_modules/**
+CONTRIBUTING.md
 
 # C++ / GN tree — not shipped in the VSIX (third_party/bootstrap is a junction)
 third_party/**
