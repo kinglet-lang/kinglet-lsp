@@ -1,8 +1,6 @@
-<h1 align="center">Perch</h1>
-
 <p align="center">
   <img src="image/icons/icon.svg" width="88" alt="Kinglet file icon (light themes)">
-  &emsp;&emsp;&emsp;
+  &nbsp;&nbsp;
   <img src="image/icons/icon-dark.svg" width="88" alt="Kinglet file icon (dark themes)">
 </p>
 
