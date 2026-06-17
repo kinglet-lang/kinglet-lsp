@@ -34,3 +34,15 @@ static_library("lsp") {
     "//third_party/bootstrap/src",
   ]
 }
+
+executable("formatting_test") {
+  testonly = true
+  sources = [ "src/lsp/formatting_test.cc" ]
+
+  deps = [ ":lsp" ]
+
+  include_dirs = [
+    "//server/src",
+    "//third_party/bootstrap/src",
+  ]
+}

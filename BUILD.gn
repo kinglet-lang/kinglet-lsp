@@ -2,6 +2,11 @@ group("default") {
   deps = [ ":kinglet-lsp" ]
 }
 
+group("tests") {
+  testonly = true
+  deps = [ "//server:formatting_test" ]
+}
+
 executable("kinglet-lsp") {
   output_name = "kinglet-lsp"
   sources = [ "server/main.cc" ]
