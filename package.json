@@ -6,7 +6,7 @@
   "publisher": "kinglet-lang",
   "author": "Kinglet Language Developers",
   "license": "MIT",
-  "icon": "image/icons/icon.png",
+  "icon": "image/icons/perch.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/kinglet-lang/perch"
@@ -94,7 +94,8 @@
     "compile": "esbuild client/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --format=cjs --sourcemap",
     "watch": "esbuild client/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --format=cjs --sourcemap --watch",
     "typecheck": "tsc -p ./ --noEmit",
-    "prepackage": "npm run compile && node scripts/stage-vsix.js",
+    "generate-icons": "python3 scripts/generate-icons.py",
+    "prepackage": "npm run generate-icons && npm run compile && node scripts/stage-vsix.js",
     "package": "vsce package"
   },
   "devDependencies": {
