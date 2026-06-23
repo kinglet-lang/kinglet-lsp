@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lsp/analysis.h"
-#include "parser/completion_context.h"
+#include "frontend/parser/completion_context.h"
 #include "lsp/json.h"
 
 #include <string>

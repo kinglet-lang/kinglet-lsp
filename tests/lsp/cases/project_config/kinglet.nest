@@ -1,0 +1,5 @@
+project "perch-lsp-fmt" version "0.1.0"
+
+fmt {
+  extensions = "group-using"
+}

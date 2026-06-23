@@ -22,16 +22,16 @@ static_library("lsp") {
   ]
 
   deps = [
-    "//third_party/bootstrap/src/checker",
-    "//third_party/bootstrap/src/lexer",
-    "//third_party/bootstrap/src/module",
-    "//third_party/bootstrap/src/parser",
-    "//third_party/bootstrap/src/preen",
+    "//compiler/frontend/checker",
+    "//compiler/frontend/lexer",
+    "//compiler/frontend/module",
+    "//compiler/frontend/parser",
+    "//compiler/driver/preen",
   ]
 
   include_dirs = [
     "//server/src",
-    "//third_party/bootstrap/src",
+    "//compiler",
   ]
 }
 
@@ -43,6 +43,6 @@ executable("formatting_test") {
 
   include_dirs = [
     "//server/src",
-    "//third_party/bootstrap/src",
+    "//compiler",
   ]
 }

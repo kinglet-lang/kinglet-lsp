@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ast/ast.h"
+#include "frontend/ast/ast.h"
 #include "lsp/analysis.h"
 
 #include <string>

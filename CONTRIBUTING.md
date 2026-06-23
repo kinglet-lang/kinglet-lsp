@@ -15,8 +15,8 @@ perch/
 ├── server/src/lsp/     # LSP protocol + analysis + completion
 ├── server/main.cc      # stdio entry point
 ├── client/             # VS Code extension (TypeScript)
-├── third_party/bootstrap/  # git submodule (compiler frontend)
-├── src/                # → third_party/bootstrap/src (symlink; GN deps //src/*)
+├── third_party/bootstrap/  # git submodule (compiler frontend/...)
+├── compiler/           # → third_party/bootstrap/compiler (symlink; mirrors bootstrap's internal //compiler/* GN refs)
 ├── build/              # GN config + bootstrap toolchain/config links
 ├── kinglet-lsp         # wrapper script → out/Default/kinglet-lsp
 └── package.json        # VS Code extension manifest

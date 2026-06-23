@@ -30,6 +30,8 @@ New-Item -ItemType Directory -Force -Path (Join-Path $Root 'build') | Out-Null
 
 Set-Junction 'build\config' (Join-Path $Bootstrap 'build\config')
 Set-Junction 'build\toolchain' (Join-Path $Bootstrap 'build\toolchain')
-Set-Junction 'src' (Join-Path $Bootstrap 'src')
+# Mirror the compiler tree so bootstrap's internal absolute "//compiler/*" GN
+# refs (deps + include_dirs) resolve from perch's source root.
+Set-Junction 'compiler' (Join-Path $Bootstrap 'compiler')
 
 Write-Host "bootstrap ready at $Bootstrap"

@@ -29,6 +29,8 @@ link_dir() {
 mkdir -p "$ROOT/build"
 link_dir build/config "$BOOTSTRAP/build/config"
 link_dir build/toolchain "$BOOTSTRAP/build/toolchain"
-link_dir src "$BOOTSTRAP/src"
+# Mirror the compiler tree so bootstrap's internal absolute "//compiler/*" GN
+# refs (deps + include_dirs) resolve from perch's source root.
+link_dir compiler "$BOOTSTRAP/compiler"
 
 echo "bootstrap ready at $BOOTSTRAP"

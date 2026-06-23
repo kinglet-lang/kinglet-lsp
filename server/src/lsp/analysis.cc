@@ -1,8 +1,8 @@
 #include "lsp/analysis.h"
 
-#include "checker/type_checker.h"
-#include "lexer/scanner.h"
-#include "module/module_loader.h"
+#include "frontend/checker/type_checker.h"
+#include "frontend/lexer/scanner.h"
+#include "frontend/module/module_loader.h"
 
 #include <filesystem>
 

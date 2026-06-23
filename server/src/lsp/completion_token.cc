@@ -1,6 +1,6 @@
 #include "lsp/completion_token.h"
 
-#include "lexer/scanner.h"
+#include "frontend/lexer/scanner.h"
 
 namespace kinglet::lsp {
 

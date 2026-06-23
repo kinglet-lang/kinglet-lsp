@@ -1,9 +1,9 @@
 #include "lsp/formatting.h"
 
 #include "lsp/protocol.h"
-#include "module/project_config.h"
-#include "preen/config.h"
-#include "preen/preen.h"
+#include "frontend/module/project_config.h"
+#include "driver/preen/config.h"
+#include "driver/preen/preen.h"
 
 #include <filesystem>
 

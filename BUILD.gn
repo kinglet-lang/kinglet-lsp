@@ -15,6 +15,6 @@ executable("kinglet-lsp") {
 
   include_dirs = [
     "//server/src",
-    "//third_party/bootstrap/src",
+    "//compiler",
   ]
 }

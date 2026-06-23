@@ -2,7 +2,7 @@
 
 #include "lsp/protocol.h"
 #include "lsp/uri_util.h"
-#include "module/module_loader.h"
+#include "frontend/module/module_loader.h"
 
 #include <cctype>
 #include <filesystem>

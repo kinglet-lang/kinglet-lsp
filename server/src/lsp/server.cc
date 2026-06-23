@@ -1,13 +1,13 @@
 #include "lsp/server.h"
 
-#include "lexer/scanner.h"
+#include "frontend/lexer/scanner.h"
 #include "lsp/completion_resolver.h"
 #include "lsp/completion_token.h"
 #include "lsp/formatting.h"
 #include "lsp/log.h"
 #include "lsp/protocol.h"
 #include "lsp/uri_util.h"
-#include "parser/parser.h"
+#include "frontend/parser/parser.h"
 
 #include <cctype>
 #include <iostream>

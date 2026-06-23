@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ast/ast.h"
-#include "parser/parser.h"
+#include "frontend/ast/ast.h"
+#include "frontend/parser/parser.h"
 
 #include <set>
 #include <string>

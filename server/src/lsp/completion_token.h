@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lexer/token.h"
+#include "frontend/lexer/token.h"
 
 #include <string>
 #include <vector>
