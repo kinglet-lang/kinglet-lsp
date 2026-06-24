@@ -3,6 +3,7 @@
 #include "lsp/protocol.h"
 #include "lsp/uri_util.h"
 #include "frontend/module/module_loader.h"
+#include "frontend/module/project_config.h"
 
 #include <cctype>
 #include <filesystem>
@@ -516,9 +517,57 @@ json::Array CompletionResolver::resolve_import_path() {
   const std::string file_path = uri_to_path(uri_);
   if (file_path.empty()) return items;
   std::filesystem::path current_path(file_path);
-  std::string base_dir = current_path.parent_path().string();
-  std::string current_name = current_path.filename().string();
   std::error_code ec;
+  std::filesystem::path abs_path = std::filesystem::absolute(current_path, ec);
+  if (ec) abs_path = current_path;
+  const std::string base_dir =
+      abs_path.has_parent_path() ? abs_path.parent_path().string() : std::string(".");
+
+  // Logical-name import is what `import` actually does today: the parser
+  // wires `import math;` to a module id looked up in kinglet.nest. So the
+  // primary completion source is the project manifest's `modules { ... }`
+  // table. We hide modules the file already imports and the module that
+  // *is* the file (its own `export module` decl), so the list isn't
+  // polluted by no-op suggestions.
+  std::set<std::string> already_imported(analysis_.imported_namespaces.begin(),
+                                          analysis_.imported_namespaces.end());
+  for (const auto &ns : analysis_.opened_namespaces) {
+    already_imported.insert(ns);
+  }
+
+  if (const auto project = kinglet::find_project_config(base_dir)) {
+    // Identify which module (if any) corresponds to this source file, so we
+    // don't suggest importing yourself.
+    std::string self_module;
+    const std::filesystem::path self_canon = std::filesystem::weakly_canonical(abs_path, ec);
+    for (const auto &[name, rel_path] : project->modules) {
+      const std::filesystem::path mod_canon = std::filesystem::weakly_canonical(
+          std::filesystem::path(project->root_dir) / rel_path, ec);
+      if (!ec && mod_canon == self_canon) {
+        self_module = name;
+        break;
+      }
+    }
+
+    for (const auto &[name, rel_path] : project->modules) {
+      if (name == self_module) continue;
+      if (already_imported.count(name)) continue;
+      if (!matches_prefix(name)) continue;
+      // kind 9 = Module, with the manifest path as detail so the user sees
+      // where the import will resolve to.
+      json::Object item;
+      item["label"] = json::Value::string(name);
+      item["kind"] = json::Value::number(9);
+      item["detail"] = json::Value::string(rel_path);
+      items.push_back(json::Value(item));
+    }
+    if (!items.empty()) return items;
+  }
+
+  // Fallback: no nest reachable, or nest reachable but produced no matches.
+  // Offer sibling .kl files as a last resort so a brand-new project that
+  // hasn't authored kinglet.nest yet still gets some help.
+  const std::string current_name = abs_path.filename().string();
   for (const auto &entry : std::filesystem::directory_iterator(base_dir, ec)) {
     if (!entry.is_regular_file()) continue;
     std::string filename = entry.path().filename().string();

@@ -1,0 +1,11 @@
+export module util;
+
+import math;
+
+pub string label(string name, int value) {
+  return name + "=" + string(value);
+}
+
+pub int sum_squares(int a, int b) {
+  return math::add(math::square(a), math::square(b));
+}

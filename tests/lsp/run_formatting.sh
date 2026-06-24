@@ -29,5 +29,18 @@ echo "==> unit: formatting_test"
 
 echo "==> integration: lsp formatting"
 python3 "$ROOT/tests/lsp/lsp_formatting_test.py" "$LSP" "$ROOT/tests/lsp/cases/basic_spacing"
+python3 "$ROOT/tests/lsp/lsp_formatting_test.py" "$LSP" "$ROOT/tests/lsp/cases/project_config"
+python3 "$ROOT/tests/lsp/lsp_formatting_test.py" "$LSP" "$ROOT/tests/lsp/cases/preserve_blank_and_cast"
+
+echo "==> integration: lsp incremental didChange"
+python3 "$ROOT/tests/lsp/lsp_incremental_test.py" "$LSP" "$ROOT/tests/lsp/cases/incremental_ascii"
+python3 "$ROOT/tests/lsp/lsp_incremental_test.py" "$LSP" "$ROOT/tests/lsp/cases/incremental_utf16"
+
+echo "==> integration: lsp nest walk-up"
+python3 "$ROOT/tests/lsp/lsp_nest_walkup_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_walkup"
+
+echo "==> integration: lsp import completion"
+python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_prefix"
+python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_empty"
 
 echo "All LSP formatting tests passed."
