@@ -196,8 +196,15 @@ AnalysisResult analyze(const std::string &source, const std::string &file_path) 
   std::unique_ptr<ModuleLoader> module_loader;
   if (!file_path.empty()) {
     std::filesystem::path p(file_path);
-    std::string base_dir = p.has_parent_path() ? p.parent_path().string() : ".";
+    // Use an absolute base directory so the kinglet.nest walk-up can climb
+    // past the open file's parent (relative paths stop at "." and never reach
+    // the project root when the LSP client opens files by absolute URI).
+    std::error_code ec;
+    std::filesystem::path abs_p = std::filesystem::absolute(p, ec);
+    if (ec) abs_p = p;
+    std::string base_dir = abs_p.has_parent_path() ? abs_p.parent_path().string() : ".";
     module_loader = std::make_unique<ModuleLoader>(base_dir);
+    module_loader->discover_project_root(base_dir);
     module_loader->register_source_file(file_path);
   }
 

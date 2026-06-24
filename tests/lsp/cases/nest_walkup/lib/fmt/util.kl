@@ -1,0 +1,7 @@
+export module util;
+
+import math;
+
+pub int sum_squares(int a, int b) {
+  return math::add(math::square(a), math::square(b));
+}
