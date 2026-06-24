@@ -4,6 +4,9 @@ client/**
 src
 src/
 src/**
+compiler
+compiler/
+compiler/**
 
 # Local scratch / debug artefacts
 tmp-err.txt
