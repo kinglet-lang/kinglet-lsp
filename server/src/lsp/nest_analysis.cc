@@ -200,10 +200,11 @@ AnalysisResult analyze_nest(const std::string &file_path, const std::string &tex
 
   const auto lines = split_lines(text);
 
-  // First pass: collect modules { } table so we can cross-reference targets
-  // and build.default in the second pass.
+  // First pass: collect modules { } and targets { } tables so we can
+  // cross-reference binary entries and build.default in the second pass.
   std::unordered_map<std::string, int> modules;  // name -> declared line
   std::unordered_map<std::string, std::string> module_paths;  // name -> rel path
+  std::unordered_set<std::string> targets;  // declared target names
   std::set<std::string> reported_dup_modules;
 
   // We track block context across lines via a simple state machine.
@@ -417,6 +418,7 @@ AnalysisResult analyze_nest(const std::string &file_path, const std::string &tex
       // Right-hand side is either `binary "name"` or `library`.
       const std::string &t0 = tokens[2].text;
       if (t0 == "binary") {
+        targets.insert(key.text);
         if (tokens.size() < 4 || tokens[3].text.empty() || tokens[3].text.front() != '"') {
           push_diag(out, lv.line, tokens[2].col,
                     static_cast<int>(tokens[2].text.size()),
@@ -428,6 +430,7 @@ AnalysisResult analyze_nest(const std::string &file_path, const std::string &tex
           (void)mod;
         }
       } else if (t0 == "library") {
+        targets.insert(key.text);
         // OK.
       } else {
         push_diag(out, lv.line, tokens[2].col,
@@ -469,11 +472,12 @@ AnalysisResult analyze_nest(const std::string &file_path, const std::string &tex
 
     if (block == "build" && tokens[0].text == "default") {
       if (tokens[2].text.front() == '"') {
-        const std::string mod = unquote(tokens[2].text);
-        if (!mod.empty() && !modules.count(mod)) {
+        const std::string name = unquote(tokens[2].text);
+        // build.default references a target, not a module.
+        if (!name.empty() && !targets.count(name)) {
           push_diag(out, lv.line, tokens[2].col,
                     static_cast<int>(tokens[2].text.size()),
-                    "build.default '" + mod + "' is not declared in modules { ... }",
+                    "build.default '" + name + "' is not declared in targets { ... }",
                     kSeverityWarning);
         }
       }

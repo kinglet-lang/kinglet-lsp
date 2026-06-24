@@ -11,7 +11,7 @@ targets {
 }
 
 build {
-  default = "a"
+  default = "app"
   backend = native
   out = ".kinglet/out"
 }
