@@ -6,6 +6,7 @@
 #include "lsp/formatting.h"
 #include "lsp/log.h"
 #include "lsp/nest_analysis.h"
+#include "lsp/nest_completion.h"
 #include "lsp/protocol.h"
 #include "lsp/uri_util.h"
 #include "frontend/parser/parser.h"
@@ -386,6 +387,14 @@ json::Value Server::handle_completion(const json::Value &params) {
   auto [line, character] = position_from_params(params);
   auto *doc = store_.get(uri);
   if (!doc) return json::Value(items);
+
+  // kinglet.nest manifests follow a different grammar and have their own
+  // completion rules; they don't pass through the parser-driven token
+  // injector below.
+  const std::string file_path = uri_to_path(uri);
+  if (std::filesystem::path(file_path).filename().string() == "kinglet.nest") {
+    return json::Value(complete_nest(file_path, doc->text, line, character));
+  }
 
   ensure_analyzed(*doc);
 

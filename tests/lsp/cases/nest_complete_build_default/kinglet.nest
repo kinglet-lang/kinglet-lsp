@@ -1,0 +1,5 @@
+project "x" version "0.1.0"
+modules { foo = "foo.kl" }
+build {
+  default = "
+}

@@ -39,10 +39,19 @@ python3 "$ROOT/tests/lsp/lsp_incremental_test.py" "$LSP" "$ROOT/tests/lsp/cases/
 echo "==> integration: lsp nest walk-up"
 python3 "$ROOT/tests/lsp/lsp_nest_walkup_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_walkup"
 
+echo "==> integration: lsp nest diagnostics"
+python3 "$ROOT/tests/lsp/lsp_nest_diagnostic_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_diag_dirty"
+python3 "$ROOT/tests/lsp/lsp_nest_diagnostic_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_diag_clean"
+
 echo "==> integration: lsp import completion"
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_prefix"
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_mid_prefix"
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_empty"
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_namespace_access"
+
+echo "==> integration: lsp nest completion"
+python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_complete_modules"
+python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_complete_targets"
+python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_complete_build_default"
 
 echo "All LSP formatting tests passed."
