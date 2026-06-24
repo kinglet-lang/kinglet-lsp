@@ -54,4 +54,7 @@ python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/n
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_complete_targets"
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/nest_complete_build_default"
 
+echo "==> integration: lsp completion stress"
+python3 "$ROOT/tests/lsp/lsp_completion_stress_test.py" "$LSP"
+
 echo "All LSP formatting tests passed."
