@@ -2,7 +2,7 @@
   "name": "perch",
   "displayName": "Perch for Kinglet",
   "description": "Language support for Kinglet — syntax highlighting and language server for .kl files.",
-  "version": "0.1.3",
+  "version": "0.1.6",
   "publisher": "kinglet-lang",
   "author": "Kinglet Language Developers",
   "license": "MIT",
