@@ -13,8 +13,8 @@
 namespace kinglet::lsp {
 
 CompletionResolver::CompletionResolver(const AnalysisResult &analysis, const std::string &prefix,
-                                       int line, const std::string &uri)
-    : analysis_(analysis), prefix_(prefix), line_(line), uri_(uri) {}
+                                       int line, int character, const std::string &uri)
+    : analysis_(analysis), prefix_(prefix), line_(line), character_(character), uri_(uri) {}
 
 bool CompletionResolver::matches_prefix(const std::string &name) const {
   if (prefix_.empty()) return true;
@@ -553,13 +553,16 @@ json::Array CompletionResolver::resolve_import_path() {
       if (name == self_module) continue;
       if (already_imported.count(name)) continue;
       if (!matches_prefix(name)) continue;
-      // kind 9 = Module, with the manifest path as detail so the user sees
-      // where the import will resolve to.
-      json::Object item;
-      item["label"] = json::Value::string(name);
-      item["kind"] = json::Value::number(9);
-      item["detail"] = json::Value::string(rel_path);
-      items.push_back(json::Value(item));
+      // Emit textEdit explicitly so VS Code's client-side filter compares
+      // the typed token (e.g. "ma") against the full label ("math") rather
+      // than against characters typed since the trigger fired. Without
+      // textEdit, character-triggered completion can silently filter out
+      // perfectly valid matches when label.startsWith(trigger_char) is
+      // false. kind=9 (Module); detail surfaces the manifest path.
+      const int start_char = character_ - static_cast<int>(prefix_.size());
+      items.push_back(protocol::completion_item_with_edit(
+          name, /*kind=*/9, rel_path, line_,
+          start_char < 0 ? character_ : start_char, character_));
     }
     if (!items.empty()) return items;
   }

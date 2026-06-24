@@ -11,7 +11,7 @@ namespace kinglet::lsp {
 class CompletionResolver {
 public:
   CompletionResolver(const AnalysisResult &analysis, const std::string &prefix, int line,
-                     const std::string &uri);
+                     int character, const std::string &uri);
 
   json::Array resolve(const CompletionInfo &info);
 
@@ -44,6 +44,7 @@ private:
   const AnalysisResult &analysis_;
   std::string prefix_;
   int line_;
+  int character_;
   std::string uri_;
 };
 

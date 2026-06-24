@@ -453,7 +453,7 @@ json::Value Server::handle_completion(const json::Value &params) {
       }
 
       CompletionResolver resolver(doc->analysis, token_result.prefix.empty() ? prefix : token_result.prefix,
-                                  line, uri);
+                                  line, character, uri);
       return json::Value(resolver.resolve(info));
     }
   }

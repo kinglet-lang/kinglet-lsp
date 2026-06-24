@@ -41,6 +41,8 @@ python3 "$ROOT/tests/lsp/lsp_nest_walkup_test.py" "$LSP" "$ROOT/tests/lsp/cases/
 
 echo "==> integration: lsp import completion"
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_prefix"
+python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_mid_prefix"
 python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_import_empty"
+python3 "$ROOT/tests/lsp/lsp_completion_test.py" "$LSP" "$ROOT/tests/lsp/cases/completion_namespace_access"
 
 echo "All LSP formatting tests passed."

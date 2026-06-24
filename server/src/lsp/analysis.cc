@@ -188,6 +188,11 @@ AnalysisResult analyze(const std::string &source, const std::string &file_path) 
             : imp->alias;
         result.imported_namespaces.insert(ns);
       }
+      if (const auto *imp = dynamic_cast<const ast::LogicalImportDecl *>(decl.get())) {
+        // `import math;` — the module id IS the namespace once resolved
+        // through kinglet.nest.
+        result.imported_namespaces.insert(imp->module_id);
+      }
     }
   }
 
@@ -208,28 +213,33 @@ AnalysisResult analyze(const std::string &source, const std::string &file_path) 
     module_loader->register_source_file(file_path);
   }
 
-  // Collect symbols from imported modules (always, even with parse errors)
+  // Collect symbols from imported modules (always, even with parse errors).
+  // Kinglet has two import surface forms today and they're distinct AST nodes:
+  //   * `import "rel/path.kl";`     -> ast::ImportDecl, may have alias /
+  //                                     selected_symbols (the legacy form).
+  //   * `import math;`              -> ast::LogicalImportDecl, looked up in
+  //                                     kinglet.nest (the manifest form).
+  // Both end up populating result.imported_symbols[ns] so namespace access
+  // (`math::|`) and qualified hover work regardless of import flavor.
   if (module_loader && parse_result.program) {
-    for (const auto &decl : parse_result.program->declarations) {
-      const auto *imp = dynamic_cast<const ast::ImportDecl *>(decl.get());
-      if (!imp) continue;
-      auto load_result = module_loader->load(imp->path);
+    // Populate result.imported_symbols[ns] from a freshly-loaded module.
+    // Filters honor selected_symbols when supplied (legacy form only).
+    auto ingest = [&](const ModuleLoader::LoadResult &load_result,
+                      const ast::Decl &decl_for_loc, const std::string &ns,
+                      const std::vector<std::string> &selected_symbols) {
       if (!load_result.module) {
         result.diagnostics.push_back({
-            imp->location.line, imp->location.column,
+            decl_for_loc.location.line, decl_for_loc.location.column,
             1, load_result.error, 1
         });
-        continue;
+        return;
       }
       const auto &mod = *load_result.module;
-      std::string ns = imp->alias.empty() ? mod.namespace_name : imp->alias;
-
       auto &syms = result.imported_symbols[ns];
-
       for (const auto *fn : mod.public_functions) {
-        if (!imp->selected_symbols.empty()) {
+        if (!selected_symbols.empty()) {
           bool found = false;
-          for (const auto &s : imp->selected_symbols) {
+          for (const auto &s : selected_symbols) {
             if (s == fn->name) { found = true; break; }
           }
           if (!found) continue;
@@ -239,33 +249,52 @@ AnalysisResult analyze(const std::string &source, const std::string &file_path) 
         sym.kind = SymbolKind::Function;
         sym.return_type = fn->return_type.to_string();
         sym.params = fn->params;
-        sym.location = imp->location;
+        sym.location = decl_for_loc.location;
         syms.push_back(std::move(sym));
       }
       for (const auto *sd : mod.public_structs) {
-        if (!imp->selected_symbols.empty()) continue;
+        if (!selected_symbols.empty()) continue;
         Symbol sym;
         sym.name = sd->name;
         sym.kind = SymbolKind::Struct;
         sym.type_name = "struct";
-        sym.location = imp->location;
+        sym.location = decl_for_loc.location;
         for (const auto &field : sd->fields) {
           sym.fields.push_back(FieldSymbol{field.name, field.type.to_string()});
         }
         syms.push_back(std::move(sym));
       }
       for (const auto *ed : mod.public_enums) {
-        if (!imp->selected_symbols.empty()) continue;
+        if (!selected_symbols.empty()) continue;
         Symbol sym;
         sym.name = ed->name;
         sym.kind = SymbolKind::Enum;
         sym.type_name = "enum";
-        sym.location = imp->location;
+        sym.location = decl_for_loc.location;
         for (const auto &v : ed->variants) {
           sym.variants.push_back(v.name);
           sym.variant_param_counts.push_back(static_cast<int>(v.param_types.size()));
         }
         syms.push_back(std::move(sym));
+      }
+    };
+
+    for (const auto &decl : parse_result.program->declarations) {
+      if (const auto *imp = dynamic_cast<const ast::ImportDecl *>(decl.get())) {
+        auto load_result = module_loader->load(imp->path);
+        const std::string ns =
+            imp->alias.empty()
+                ? (load_result.module ? load_result.module->namespace_name
+                                       : std::filesystem::path(imp->path).stem().string())
+                : imp->alias;
+        ingest(load_result, *imp, ns, imp->selected_symbols);
+        continue;
+      }
+      if (const auto *imp = dynamic_cast<const ast::LogicalImportDecl *>(decl.get())) {
+        auto load_result = module_loader->load_by_logical_name(imp->module_id);
+        // The manifest key IS the namespace user wrote (`import math` -> `math::`).
+        ingest(load_result, *imp, imp->module_id, {});
+        continue;
       }
     }
   }
