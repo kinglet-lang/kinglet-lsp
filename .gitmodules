@@ -1,3 +1,4 @@
 [submodule "third_party/bootstrap"]
 	path = third_party/bootstrap
 	url = https://github.com/kinglet-lang/bootstrap.git
+	branch = canon
