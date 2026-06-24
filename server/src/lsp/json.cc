@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <charconv>
+#include <cstdint>
 #include <cstdlib>
 #include <sstream>
 
@@ -15,6 +16,47 @@ void skip_ws(std::string_view input, std::size_t &pos) {
   }
 }
 
+// Append the UTF-8 encoding of a Unicode code point to `out`. Invalid
+// (non-scalar) values are encoded as U+FFFD so we never produce broken UTF-8.
+void append_utf8(std::string &out, std::uint32_t cp) {
+  if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
+    cp = 0xFFFD;
+  }
+  if (cp < 0x80) {
+    out += static_cast<char>(cp);
+  } else if (cp < 0x800) {
+    out += static_cast<char>(0xC0 | (cp >> 6));
+    out += static_cast<char>(0x80 | (cp & 0x3F));
+  } else if (cp < 0x10000) {
+    out += static_cast<char>(0xE0 | (cp >> 12));
+    out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+    out += static_cast<char>(0x80 | (cp & 0x3F));
+  } else {
+    out += static_cast<char>(0xF0 | (cp >> 18));
+    out += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+    out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+    out += static_cast<char>(0x80 | (cp & 0x3F));
+  }
+}
+
+// Read exactly four hex digits at `pos` and advance. Returns -1 on failure
+// (e.g. malformed input).
+int parse_hex4(std::string_view input, std::size_t &pos) {
+  if (pos + 4 > input.size()) return -1;
+  int value = 0;
+  for (int i = 0; i < 4; ++i) {
+    const char c = input[pos + static_cast<std::size_t>(i)];
+    int digit;
+    if (c >= '0' && c <= '9') digit = c - '0';
+    else if (c >= 'a' && c <= 'f') digit = 10 + (c - 'a');
+    else if (c >= 'A' && c <= 'F') digit = 10 + (c - 'A');
+    else return -1;
+    value = (value << 4) | digit;
+  }
+  pos += 4;
+  return value;
+}
+
 std::string parse_string(std::string_view input, std::size_t &pos) {
   if (pos >= input.size() || input[pos] != '"') {
     return "";
@@ -25,17 +67,42 @@ std::string parse_string(std::string_view input, std::size_t &pos) {
     if (input[pos] == '\\' && pos + 1 < input.size()) {
       ++pos;
       switch (input[pos]) {
-      case 'n': result += '\n'; break;
-      case 't': result += '\t'; break;
-      case 'r': result += '\r'; break;
-      case '\\': result += '\\'; break;
-      case '"': result += '"'; break;
-      default: result += input[pos]; break;
+      case 'n': result += '\n'; ++pos; break;
+      case 't': result += '\t'; ++pos; break;
+      case 'r': result += '\r'; ++pos; break;
+      case 'b': result += '\b'; ++pos; break;
+      case 'f': result += '\f'; ++pos; break;
+      case '/': result += '/'; ++pos; break;
+      case '\\': result += '\\'; ++pos; break;
+      case '"': result += '"'; ++pos; break;
+      case 'u': {
+        ++pos; // skip 'u'
+        const int hi = parse_hex4(input, pos);
+        if (hi < 0) break;
+        std::uint32_t cp = static_cast<std::uint32_t>(hi);
+        // High surrogate? Look for the matching low surrogate.
+        if (cp >= 0xD800 && cp <= 0xDBFF && pos + 2 <= input.size() &&
+            input[pos] == '\\' && input[pos + 1] == 'u') {
+          std::size_t saved = pos;
+          pos += 2;
+          const int lo = parse_hex4(input, pos);
+          if (lo >= 0xDC00 && lo <= 0xDFFF) {
+            cp = 0x10000 + ((cp - 0xD800) << 10) + (static_cast<std::uint32_t>(lo) - 0xDC00);
+          } else {
+            // Not a valid low surrogate — rewind and emit the high surrogate
+            // as a replacement char.
+            pos = saved;
+          }
+        }
+        append_utf8(result, cp);
+        break;
+      }
+      default: result += input[pos]; ++pos; break;
       }
     } else {
       result += input[pos];
+      ++pos;
     }
-    ++pos;
   }
   if (pos < input.size()) ++pos; // skip closing "
   return result;

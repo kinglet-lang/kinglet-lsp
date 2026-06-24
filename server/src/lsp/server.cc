@@ -123,7 +123,8 @@ json::Value Server::handle_initialize(const json::Value &) {
 
   json::Object text_doc_sync;
   text_doc_sync["openClose"] = json::Value(true);
-  text_doc_sync["change"] = json::Value::number(1);
+  // 2 = Incremental: contentChanges can carry ranged edits.
+  text_doc_sync["change"] = json::Value::number(2);
   capabilities["textDocumentSync"] = json::Value(text_doc_sync);
 
   json::Object completion_provider;
@@ -202,20 +203,111 @@ void Server::handle_did_change(const json::Value &params) {
   auto changes_it = p.find("contentChanges");
   if (doc_it == p.end() || changes_it == p.end()) return;
 
-  std::string uri = doc_it->second.as_object().at("uri").as_string();
-  const auto &changes = changes_it->second.as_array();
-  if (changes.empty()) return;
+  const auto &doc_obj = doc_it->second.as_object();
+  auto uri_field = doc_obj.find("uri");
+  if (uri_field == doc_obj.end()) return;
+  const std::string uri = uri_field->second.as_string();
 
-  const auto &change = changes.back().as_object();
-  std::string new_text = change.at("text").as_string();
-  int version = 0;
-  auto ver_it = change.find("range");
-  (void)ver_it;
-  auto doc_ver_it = doc_it->second.as_object().find("version");
-  if (doc_ver_it != doc_it->second.as_object().end() && doc_ver_it->second.is_number()) {
-    version = static_cast<int>(doc_ver_it->second.as_number());
+  Document *doc = store_.get(uri);
+  if (!doc) return;
+
+  // Resolve a (line, character) LSP Position to a byte offset in `text`.
+  // The LSP spec defines `character` as a UTF-16 code unit offset within the
+  // line. We scan the line as UTF-8, advancing the UTF-16 counter by 1 for
+  // every code point in the Basic Multilingual Plane and by 2 for code
+  // points above U+FFFF (surrogate pair). Out-of-range positions clamp to
+  // the end of the line (LSP §3 — "If the character value is greater than
+  // the line length it defaults back to the line length.").
+  auto position_to_offset = [](const std::string &text, int line, int character) -> std::size_t {
+    if (line < 0) line = 0;
+    if (character < 0) character = 0;
+    std::size_t offset = 0;
+    int current_line = 0;
+    while (current_line < line && offset < text.size()) {
+      if (text[offset] == '\n') {
+        ++current_line;
+      }
+      ++offset;
+    }
+    const std::size_t line_start = offset;
+    std::size_t line_end = line_start;
+    while (line_end < text.size() && text[line_end] != '\n') {
+      ++line_end;
+    }
+    std::size_t cursor = line_start;
+    int utf16 = 0;
+    while (cursor < line_end && utf16 < character) {
+      const unsigned char b = static_cast<unsigned char>(text[cursor]);
+      std::size_t utf8_len = 1;
+      int utf16_len = 1;
+      if (b < 0x80) {
+        utf8_len = 1;
+      } else if ((b & 0xE0) == 0xC0) {
+        utf8_len = 2;
+      } else if ((b & 0xF0) == 0xE0) {
+        utf8_len = 3;
+      } else if ((b & 0xF8) == 0xF0) {
+        utf8_len = 4;
+        utf16_len = 2;  // surrogate pair
+      }
+      if (cursor + utf8_len > line_end) break;
+      // Stop before consuming a code point that would overshoot `character`,
+      // mirroring how editors place the cursor at code-unit boundaries.
+      if (utf16 + utf16_len > character) break;
+      cursor += utf8_len;
+      utf16 += utf16_len;
+    }
+    return cursor;
+  };
+
+  std::string text = doc->text;
+  const auto &changes = changes_it->second.as_array();
+  for (const auto &raw : changes) {
+    if (!raw.is_object()) continue;
+    const auto &change = raw.as_object();
+    const auto text_it = change.find("text");
+    if (text_it == change.end() || !text_it->second.is_string()) continue;
+    const std::string &new_text = text_it->second.as_string();
+
+    const auto range_it = change.find("range");
+    if (range_it == change.end() || !range_it->second.is_object()) {
+      // Full-document update — last full entry wins.
+      text = new_text;
+      continue;
+    }
+
+    const auto &range = range_it->second.as_object();
+    const auto start_it = range.find("start");
+    const auto end_it = range.find("end");
+    if (start_it == range.end() || end_it == range.end()) {
+      text = new_text;
+      continue;
+    }
+    const auto &start = start_it->second.as_object();
+    const auto &end = end_it->second.as_object();
+    auto pos_field = [](const json::Object &o, const char *key) -> int {
+      auto it = o.find(key);
+      if (it == o.end() || !it->second.is_number()) return 0;
+      return static_cast<int>(it->second.as_number());
+    };
+    const int start_line = pos_field(start, "line");
+    const int start_char = pos_field(start, "character");
+    const int end_line = pos_field(end, "line");
+    const int end_char = pos_field(end, "character");
+
+    const std::size_t start_off = position_to_offset(text, start_line, start_char);
+    const std::size_t end_off = position_to_offset(text, end_line, end_char);
+    const std::size_t lo = start_off < end_off ? start_off : end_off;
+    const std::size_t hi = start_off < end_off ? end_off : start_off;
+    text.replace(lo, hi - lo, new_text);
   }
-  store_.change(uri, new_text, version);
+
+  int version = doc->version;
+  auto ver_it = doc_obj.find("version");
+  if (ver_it != doc_obj.end() && ver_it->second.is_number()) {
+    version = static_cast<int>(ver_it->second.as_number());
+  }
+  store_.change(uri, text, version);
   if (auto *d = store_.get(uri)) {
     publish_diagnostics(*d);
   }

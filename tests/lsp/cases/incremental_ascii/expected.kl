@@ -1,0 +1,4 @@
+using io;
+int entry() {
+  return 0;
+}
