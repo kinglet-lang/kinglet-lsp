@@ -64,7 +64,7 @@ ninja -C out/Default kinglet-lsp
 npm run package
 ```
 
-In VS Code: **Extensions** → `...` → **Install from VSIX…** → pick `perch-0.1.12.vsix`.
+In VS Code: **Extensions** → `...` → **Install from VSIX…** → pick `perch-0.1.13.vsix`.
 
 The client is **esbuild-bundled** into `out/extension.js` (includes `vscode-languageclient`).
 Do not exclude `node_modules` from the VSIX without bundling — that leaves the extension stuck on **activating**.
