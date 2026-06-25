@@ -36,9 +36,9 @@ json::Array CompletionResolver::resolve(const CompletionInfo &info) {
     return resolve_expression();
   case CompletionPosition::TypeExpr:
   case CompletionPosition::StructFieldDecl:
-    return resolve_type_expr();
+    return resolve_type_expr(info.type_params);
   case CompletionPosition::ParameterType:
-    return resolve_param_type();
+    return resolve_param_type(info.type_params);
   case CompletionPosition::FieldAccess:
     return resolve_field_access(info.receiver_type);
   case CompletionPosition::NamespaceAccess:
@@ -48,7 +48,7 @@ json::Array CompletionResolver::resolve(const CompletionInfo &info) {
   case CompletionPosition::ImportSymbol:
     return resolve_import_symbol(info.import_path);
   case CompletionPosition::ConceptMethodDecl:
-    return resolve_param_type();
+    return resolve_param_type(info.type_params);
   case CompletionPosition::MatchArm:
     return resolve_enum_variant(info.receiver_type);
   case CompletionPosition::StructLiteral:
@@ -254,9 +254,11 @@ json::Array CompletionResolver::resolve_expression() {
   return items;
 }
 
-json::Array CompletionResolver::resolve_type_expr() {
+json::Array CompletionResolver::resolve_type_expr(
+    const std::vector<std::string> &type_params) {
   json::Array items;
   add_type_keywords(items);
+  add_type_params(items, type_params);
   auto visible = analysis_.symbols.visible_at(line_ + 1);
   for (const auto *sym : visible) {
     if (sym->kind != SymbolKind::Struct && sym->kind != SymbolKind::Enum &&
@@ -270,11 +272,13 @@ json::Array CompletionResolver::resolve_type_expr() {
   return items;
 }
 
-json::Array CompletionResolver::resolve_param_type() {
+json::Array CompletionResolver::resolve_param_type(
+    const std::vector<std::string> &type_params) {
   // Parameter types: same as a type expression, but `void` and `auto` are
   // never valid as a parameter type, so they are excluded.
   json::Array items;
   add_type_keywords(items, /*include_void_auto=*/false);
+  add_type_params(items, type_params);
   auto visible = analysis_.symbols.visible_at(line_ + 1);
   for (const auto *sym : visible) {
     if (sym->kind != SymbolKind::Struct && sym->kind != SymbolKind::Enum &&
@@ -286,6 +290,16 @@ json::Array CompletionResolver::resolve_param_type() {
     items.push_back(protocol::completion_item(sym->name, kind, sym->type_name));
   }
   return items;
+}
+
+void CompletionResolver::add_type_params(
+    json::Array &items, const std::vector<std::string> &type_params) {
+  // Generic type parameters (e.g. concept Printable<T>) are valid type names
+  // inside the declaration's body. Kind 25 = TypeParameter.
+  for (const auto &tp : type_params) {
+    if (!matches_prefix(tp)) continue;
+    items.push_back(protocol::completion_item(tp, 25, "type parameter"));
+  }
 }
 
 // Resolve a single member (field or method) of `type_name` to the type it

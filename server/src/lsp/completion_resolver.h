@@ -5,6 +5,7 @@
 #include "lsp/json.h"
 
 #include <string>
+#include <vector>
 
 namespace kinglet::lsp {
 
@@ -19,8 +20,8 @@ private:
   json::Array resolve_top_level();
   json::Array resolve_statement();
   json::Array resolve_expression();
-  json::Array resolve_type_expr();
-  json::Array resolve_param_type();
+  json::Array resolve_type_expr(const std::vector<std::string> &type_params);
+  json::Array resolve_param_type(const std::vector<std::string> &type_params);
   json::Array resolve_field_access(const std::string &receiver_type);
   std::string walk_access_chain(const std::string &chain);
   std::string member_type(const std::string &type_name, const std::string &member, bool is_call);
@@ -36,6 +37,8 @@ private:
   void add_type_keywords(json::Array &items);
   void add_type_keywords(json::Array &items, bool include_void_auto);
   void add_cast_keywords(json::Array &items);
+  void add_type_params(json::Array &items,
+                       const std::vector<std::string> &type_params);
   void add_statement_keywords(json::Array &items);
   void add_decl_keywords(json::Array &items);
   void add_namespace_completions(json::Array &items);
